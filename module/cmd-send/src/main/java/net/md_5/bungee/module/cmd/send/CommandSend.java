@@ -2,6 +2,8 @@ package net.md_5.bungee.module.cmd.send;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
+
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -151,7 +153,7 @@ public class CommandSend extends Command implements TabExecutor
                     .reason( ServerConnectEvent.Reason.COMMAND )
                     .callback( new SendCallback.Entry( callback, player, server ) )
                     .build();
-            player.connect( request );
+           player.connect( request );
         }
 
         sender.sendMessage( ChatColor.DARK_GREEN + "Attempting to send " + targets.size() + " players to " + server.getName() );

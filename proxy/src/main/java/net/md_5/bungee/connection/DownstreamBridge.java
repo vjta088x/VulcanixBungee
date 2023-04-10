@@ -16,12 +16,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.unix.DomainSocketAddress;
-import java.io.DataInput;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.md_5.bungee.BungeeCord;
 import net.md_5.bungee.ServerConnection;
 import net.md_5.bungee.ServerConnection.KeepAliveData;
 import net.md_5.bungee.UserConnection;
@@ -31,17 +28,10 @@ import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.event.PluginMessageEvent;
-import net.md_5.bungee.api.event.ServerConnectEvent;
-import net.md_5.bungee.api.event.ServerDisconnectEvent;
-import net.md_5.bungee.api.event.ServerKickEvent;
-import net.md_5.bungee.api.event.TabCompleteResponseEvent;
+import net.md_5.bungee.api.event.*;
 import net.md_5.bungee.api.plugin.Command;
-import net.md_5.bungee.api.score.Objective;
-import net.md_5.bungee.api.score.Position;
-import net.md_5.bungee.api.score.Score;
-import net.md_5.bungee.api.score.Scoreboard;
 import net.md_5.bungee.api.score.Team;
+import net.md_5.bungee.api.score.*;
 import net.md_5.bungee.chat.ComponentSerializer;
 import net.md_5.bungee.entitymap.EntityMap;
 import net.md_5.bungee.netty.ChannelWrapper;
@@ -49,22 +39,14 @@ import net.md_5.bungee.netty.PacketHandler;
 import net.md_5.bungee.protocol.DefinedPacket;
 import net.md_5.bungee.protocol.PacketWrapper;
 import net.md_5.bungee.protocol.ProtocolConstants;
-import net.md_5.bungee.protocol.packet.BossBar;
-import net.md_5.bungee.protocol.packet.Commands;
-import net.md_5.bungee.protocol.packet.KeepAlive;
-import net.md_5.bungee.protocol.packet.Kick;
-import net.md_5.bungee.protocol.packet.PlayerListItem;
-import net.md_5.bungee.protocol.packet.PlayerListItemRemove;
-import net.md_5.bungee.protocol.packet.PlayerListItemUpdate;
-import net.md_5.bungee.protocol.packet.PluginMessage;
-import net.md_5.bungee.protocol.packet.Respawn;
-import net.md_5.bungee.protocol.packet.ScoreboardDisplay;
-import net.md_5.bungee.protocol.packet.ScoreboardObjective;
-import net.md_5.bungee.protocol.packet.ScoreboardScore;
-import net.md_5.bungee.protocol.packet.ServerData;
-import net.md_5.bungee.protocol.packet.SetCompression;
-import net.md_5.bungee.protocol.packet.TabCompleteResponse;
+import net.md_5.bungee.protocol.packet.*;
 import net.md_5.bungee.tab.TabList;
+
+import java.io.DataInput;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 public class DownstreamBridge extends PacketHandler
@@ -78,7 +60,9 @@ public class DownstreamBridge extends PacketHandler
     };
     //
     private final ProxyServer bungee;
+    @Getter
     private final UserConnection con;
+    @Getter
     private final ServerConnection server;
 
     @Override
@@ -562,6 +546,19 @@ public class DownstreamBridge extends PacketHandler
                     }
                     break;
                 }
+                //VX implementation
+                //CHECKSTYLE:OFF
+                case "ACKQuit":
+                {
+                    ProxiedPlayer player = bungee.getPlayer( in.readUTF() );
+
+                    UserConnection userConnection = (UserConnection) player;
+                    if(player != null){
+                        System.out.println(Integer.toHexString(System.identityHashCode(userConnection)));
+                        userConnection.setCanJoin(true);
+                    }
+                }
+                //CHECKSTYLE:ON
             }
 
             // Check we haven't set out to null, and we have written data, if so reply back back along the BungeeCord channel

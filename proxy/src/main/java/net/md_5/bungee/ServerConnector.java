@@ -4,12 +4,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.api.ChatColor;
@@ -37,25 +31,17 @@ import net.md_5.bungee.protocol.DefinedPacket;
 import net.md_5.bungee.protocol.PacketWrapper;
 import net.md_5.bungee.protocol.Protocol;
 import net.md_5.bungee.protocol.ProtocolConstants;
-import net.md_5.bungee.protocol.packet.EncryptionRequest;
-import net.md_5.bungee.protocol.packet.EntityStatus;
-import net.md_5.bungee.protocol.packet.GameState;
-import net.md_5.bungee.protocol.packet.Handshake;
-import net.md_5.bungee.protocol.packet.Kick;
-import net.md_5.bungee.protocol.packet.Login;
-import net.md_5.bungee.protocol.packet.LoginPayloadRequest;
-import net.md_5.bungee.protocol.packet.LoginPayloadResponse;
-import net.md_5.bungee.protocol.packet.LoginRequest;
-import net.md_5.bungee.protocol.packet.LoginSuccess;
-import net.md_5.bungee.protocol.packet.PluginMessage;
-import net.md_5.bungee.protocol.packet.Respawn;
-import net.md_5.bungee.protocol.packet.ScoreboardObjective;
-import net.md_5.bungee.protocol.packet.ScoreboardScore;
-import net.md_5.bungee.protocol.packet.SetCompression;
-import net.md_5.bungee.protocol.packet.ViewDistance;
+import net.md_5.bungee.protocol.packet.*;
 import net.md_5.bungee.util.AddressUtil;
 import net.md_5.bungee.util.BufUtil;
 import net.md_5.bungee.util.QuietException;
+
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 public class ServerConnector extends PacketHandler
@@ -63,6 +49,8 @@ public class ServerConnector extends PacketHandler
 
     private final ProxyServer bungee;
     private ChannelWrapper ch;
+
+    @Getter
     private final UserConnection user;
     private final BungeeServerInfo target;
     private State thisState = State.LOGIN_SUCCESS;
@@ -184,6 +172,9 @@ public class ServerConnector extends PacketHandler
         ServerConnection server = new ServerConnection( ch, target );
         ServerConnectedEvent event = new ServerConnectedEvent( user, server );
         bungee.getPluginManager().callEvent( event );
+
+        //CHECKSTYLE:OFF
+
 
         ch.write( BungeeCord.getInstance().registerChannels( user.getPendingConnection().getVersion() ) );
         Queue<DefinedPacket> packetQueue = target.getPacketQueue();
@@ -316,6 +307,7 @@ public class ServerConnector extends PacketHandler
             return;
         }
 
+
         // Add to new server
         // TODO: Move this to the connected() method of DownstreamBridge
         target.addPlayer( user );
@@ -332,8 +324,7 @@ public class ServerConnector extends PacketHandler
         thisState = State.FINISHED;
 
         throw CancelSendSignal.INSTANCE;
-    }
-
+    }    //CHECKSTYLE:ON
     @Override
     public void handle(EncryptionRequest encryptionRequest) throws Exception
     {

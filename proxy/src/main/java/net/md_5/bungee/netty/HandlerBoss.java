@@ -9,8 +9,16 @@ import io.netty.handler.codec.haproxy.HAProxyMessage;
 import io.netty.handler.timeout.ReadTimeoutException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+
+import io.netty.util.NettyRuntime;
+import net.md_5.bungee.*;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.scheduler.ScheduledTask;
 import net.md_5.bungee.connection.CancelSendSignal;
 import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.connection.PingHandler;
@@ -37,20 +45,74 @@ public class HandlerBoss extends ChannelInboundHandlerAdapter
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception
-    {
-        if ( handler != null )
-        {
-            channel = new ChannelWrapper( ctx );
-            handler.connected( channel );
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        if (handler != null) {
+            if (handler instanceof ServerConnector) {
+                ServerConnector downstreamBridge = (ServerConnector) handler;
+                ProxiedPlayer player = BungeeCord.getInstance().getPlayer(downstreamBridge.getUser().getName());
+                UserConnection userConnection = (UserConnection) player;
+                if (downstreamBridge.getUser() != null) {
+                    userConnection.setCanJoin(false);
+                    if (userConnection.getServer() != null) {
+                        ServerConnection serverConnection = downstreamBridge.getUser().getServer();
+                        serverConnection.sendData("BungeeCord", ("preQuit;" + downstreamBridge.getUser().getName()).getBytes(StandardCharsets.UTF_8));
+                        if (userConnection.getServer().getInfo().getName().contains("auth")
+                                || userConnection.getServer().getInfo().getName().contains("QUEUE")
+                                || userConnection.getServer().getInfo().getName().contains("SURVIVAL")
+                                || userConnection.getServer().getInfo().getName().contains("KapitanCraft")) {
+                            userConnection.setCanJoin(true);
+                            BungeeCord.getInstance().getLogger().warning("Exception setting canJoin true");
+                        }
+                    } else {
+                        userConnection.setCanJoin(true);
+                    }
+                    System.out.println(Integer.toHexString(System.identityHashCode(userConnection)));
 
-            if ( !( handler instanceof InitialHandler || handler instanceof PingHandler ) )
-            {
-                ProxyServer.getInstance().getLogger().log( Level.INFO, "{0} has connected", handler );
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(()->{
+                        long sysMil = System.currentTimeMillis();
+                        while (true){
+                            synchronized(userConnection) {
+                                if (userConnection.isCanJoin()) {
+                                    break;
+                                }
+                            }
+                            if(System.currentTimeMillis() >= (sysMil + 4800)){
+                                userConnection.setCanJoin(true);
+                                break;
+                            }
+                        }
+                    });
+                    future.thenRun(() -> {
+                        ctx.channel().eventLoop().execute(() -> {
+                            connect(ctx);
+                        });
+                    });
+                }
+
+            }else{
+                channel = new ChannelWrapper(ctx);
+                try {
+                    handler.connected(channel);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+                if (!(handler instanceof InitialHandler || handler instanceof PingHandler)) {
+                    ProxyServer.getInstance().getLogger().log(Level.INFO, "{0} has connected", handler);
+                }
             }
         }
     }
 
+    private synchronized void connect(ChannelHandlerContext ctx){
+        channel = new ChannelWrapper(ctx);
+        try {
+            handler.connected(channel);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        ProxyServer.getInstance().getLogger().log(Level.INFO, "{0} has connected", handler);
+    }
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception
     {
