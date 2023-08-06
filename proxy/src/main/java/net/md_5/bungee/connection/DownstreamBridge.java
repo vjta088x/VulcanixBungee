@@ -16,6 +16,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.unix.DomainSocketAddress;
+import java.io.DataInput;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.BungeeCord;
@@ -385,6 +392,27 @@ public class DownstreamBridge extends PacketHandler
                     }
                     break;
                 }
+                case "GetPlayerServer":
+                {
+                    String name = in.readUTF();
+                    ProxiedPlayer player = bungee.getPlayer( name );
+                    out.writeUTF( "GetPlayerServer" );
+                    out.writeUTF( name );
+                    if ( player == null )
+                    {
+                        out.writeUTF( "" );
+                        break;
+                    }
+                    Server srv = player.getServer();
+                    if ( srv == null )
+                    {
+                        out.writeUTF( "" );
+                    } else
+                    {
+                        out.writeUTF( srv.getInfo().getName() );
+                    }
+                    break;
+                }
                 case "IP":
                     out.writeUTF( "IP" );
                     if ( con.getSocketAddress() instanceof InetSocketAddress )
@@ -546,6 +574,16 @@ public class DownstreamBridge extends PacketHandler
                     }
                     break;
                 }
+                case "KickPlayerRaw":
+                {
+                    ProxiedPlayer player = bungee.getPlayer( in.readUTF() );
+                    if ( player != null )
+                    {
+                        BaseComponent[] kickReason = ComponentSerializer.parse( in.readUTF() );
+                        player.disconnect( kickReason );
+                    }
+                    break;
+                }
                 //VX implementation
                 //CHECKSTYLE:OFF
                 case "ACKQuit":
@@ -611,6 +649,23 @@ public class DownstreamBridge extends PacketHandler
                     return input.getText();
                 }
             } );
+        } else
+        {
+            String last = con.getLastCommandTabbed();
+            if ( last != null )
+            {
+                String commandName = last.toLowerCase( Locale.ROOT );
+                commands.addAll( bungee.getPluginManager().getCommands().stream()
+                        .filter( (entry) ->
+                        {
+                            String lowerCase = entry.getKey().toLowerCase( Locale.ROOT );
+                            return lowerCase.startsWith( commandName ) && entry.getValue().hasPermission( con ) && !bungee.getDisabledCommands().contains( lowerCase );
+                        } )
+                        .map( (stringCommandEntry) -> '/' + stringCommandEntry.getKey() )
+                        .collect( Collectors.toList() ) );
+                commands.sort( null );
+                con.setLastCommandTabbed( null );
+            }
         }
 
         TabCompleteResponseEvent tabCompleteResponseEvent = new TabCompleteResponseEvent( server, con, new ArrayList<>( commands ) );

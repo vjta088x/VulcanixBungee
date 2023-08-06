@@ -5,7 +5,7 @@
 
     <groupId>net.md-5</groupId>
     <artifactId>bungeecord-parent</artifactId>
-    <version>1.19-R0.1-SNAPSHOT</version>
+    <version>1.20-R0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>BungeeCord-Parent</name>
@@ -72,7 +72,7 @@
 
     <properties>
         <build.number>unknown</build.number>
-        <lombok.version>1.18.26</lombok.version>
+        <lombok.version>1.18.28</lombok.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -83,7 +83,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.91.Final</version>
+                <version>4.1.96.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -121,7 +121,7 @@
             <plugin>
                 <groupId>net.md-5</groupId>
                 <artifactId>scriptus</artifactId>
-                <version>0.4.1</version>
+                <version>0.5.0</version>
                 <configuration>
                     <format>git:${project.name}:${project.version}:%s:${build.number}</format>
                 </configuration>
@@ -142,7 +142,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.2.2</version>
+                <version>3.3.0</version>
                 <executions>
                     <execution>
                         <phase>process-classes</phase>
@@ -204,7 +204,7 @@
                             </rules>
                         </configuration>
                         <goals>
-                            <goal>enforce</goal>
+                            <!--<goal>enforce</goal>--> <!-- Disabled until maven-resolver is upgraded again. -->
                         </goals>
                     </execution>
                 </executions>
@@ -267,7 +267,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.2.1</version>
+                        <version>3.3.0</version>
                         <executions>
                             <execution>
                                 <phase>package</phase>
@@ -343,7 +343,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.0.1</version>
+                        <version>3.1.0</version>
                         <executions>
                             <execution>
                                 <phase>verify</phase>
